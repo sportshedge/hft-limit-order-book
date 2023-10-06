@@ -1,6 +1,8 @@
 export enum ERROR {
   Default = 'Something wrong',
   ErrInsufficientQuantity = 'orderbook: insufficient quantity to calculate price',
+  ErrInvalidAlternateMarketOrderSide = 'orderbook: only buy side orders are supported',
+  ErrInvalidMinMarketAlternate = 'orderbook: minimum amount in orderbook is higher than the amount provided by user',
   ErrInvalidOrderType = "orderbook: supported order type are 'limit' and 'market'",
   ErrInvalidPrice = 'orderbook: invalid order price',
   ErrInvalidPriceLevel = 'orderbook: invalid order price level',
@@ -31,6 +33,10 @@ export const CustomError = (error?: ERROR | string): Error => {
       return new Error(ERROR.ErrInvalidTimeInForce)
     case ERROR.ErrLimitFOKNotFillable:
       return new Error(ERROR.ErrLimitFOKNotFillable)
+    case ERROR.ErrInvalidAlternateMarketOrderSide:
+      return new Error(ERROR.ErrInvalidAlternateMarketOrderSide)
+    case ERROR.ErrInvalidMinMarketAlternate:
+      return new Error(ERROR.ErrInvalidMinMarketAlternate)
     default:
       error = error === undefined || error === '' ? '' : `: ${error}`
       return new Error(`${ERROR.Default}${error}`)
