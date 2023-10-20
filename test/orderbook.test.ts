@@ -1,7 +1,7 @@
 import { Order, OrderType, OrderUpdate, TimeInForce } from '../src/order'
 import { test } from 'tap'
 import { Side } from '../src/side'
-import { OrderBook } from '../src/orderbook'
+import { OrderBook, IOrderBookMarshaler } from '../src/orderbook'
 import { ERROR } from '../src/errors'
 
 const addDepth = (ob: OrderBook, prefix: string, quantity: number): void => {
@@ -432,12 +432,16 @@ void test('test export import', ({ equal, end }) => {
   
   ob.limit(Side.BUY, '1', 10, 10000, TimeInForce.GTC)
   ob.limit(Side.BUY, '2', 10, 10001, TimeInForce.GTC)
+  ob.limit(Side.SELL, '2.2', 10, 11001, TimeInForce.GTC)
   ob.limit(Side.BUY, '3', 10, 10002, TimeInForce.GTC)
 
   console.log(ob.depth()) 
   
   let snapshot = ob.export()
+  const snapStr = JSON.stringify(snapshot)
   
+  console.log("Snap: ", snapStr)
+
   ob = new OrderBook()
 
   let [asks, bids] = ob.depth()
@@ -448,7 +452,10 @@ void test('test export import', ({ equal, end }) => {
   equal(asks.length, 0)
   equal(bids.length, 0)
 
-  ob.import(snapshot)
+  const snapRestoredStr: IOrderBookMarshaler = JSON.parse(snapStr);
+  console.log("Snap: ", snapRestoredStr)
+
+  ob.import(snapRestoredStr, ob)
 
   console.log(ob.depth())
 
@@ -456,16 +463,16 @@ void test('test export import', ({ equal, end }) => {
   asks = ob.depth()[0]
   bids = ob.depth()[1]
 
-  equal(asks.length, 0)
+  equal(asks.length, 1)
   equal(bids.length, 3)
 
   ob.limit(Side.SELL, '33', 10, 10002, TimeInForce.GTC)
   ob.limit(Side.SELL, '22', 10, 10001, TimeInForce.GTC)
+  ob.limit(Side.BUY, '22.2', 10, 11001, TimeInForce.GTC)
   ob.limit(Side.SELL, '11', 10, 10000, TimeInForce.GTC)
 
   console.log(ob.depth())
 
-  // @ts-ignore
   asks = ob.depth()[0]
   bids = ob.depth()[1]
 

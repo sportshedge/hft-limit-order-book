@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js'
 import { ERROR, CustomError } from './errors'
-import { Order, OrderType, OrderUpdate, TimeInForce } from './order'
+import { Order, OrderType, OrderUpdate, TimeInForce, IOrder } from './order'
 import { OrderQueue } from './orderqueue'
 import { OrderSide } from './orderside'
 import { Side } from './side'
@@ -29,9 +29,9 @@ interface IAlternateMarketOrder {
   maxQtyToProvide: number
 }
 
-interface IOrderBookMarshaler {
-  asks: OrderSide;
-  bids: OrderSide;
+export interface IOrderBookMarshaler {
+  timesBySequence: number[],
+  timeOrdersMap: {[key: string]: IOrder[]}
 }
 
 const validTimeInForce = Object.values(TimeInForce)
@@ -734,29 +734,66 @@ export class OrderBook {
   }
 
   // export simply returns a snapshot of orderbook
-  public export = (): IOrderBookMarshaler => (
-    {
-      asks: this.asks,
-      bids: this.bids
+  // please read the comments to understand the rational
+  public export = (): IOrderBookMarshaler => {
+    /**
+     * timesBySequence is the list of timestamps, which should be stored in a sorted manner, to know which order is from when
+     */
+    const timesBySequence: number[] = [];
+    /**
+     * timeOrdersMap will store all orders for a given timestamp
+     * since it's a map, timestamps are not in any particular order
+     */
+    const timeOrdersMap: {[key: string]: IOrder[]} = {};
+
+    const getTimeBasedOrders = (asksOrBids: OrderSide) => {
+      for (let order of asksOrBids.orders()) {
+        timesBySequence.push(order.time)
+
+        if (timeOrdersMap[order.time] === undefined) {
+          timeOrdersMap[order.time] = [order.toObject()]
+        } else {
+          timeOrdersMap[order.time].push(order.toObject())
+        }
+      }
     }
-	)
+    
+    getTimeBasedOrders(this.asks)
+    getTimeBasedOrders(this.bids)
+    
+    // this will ensure all the times are sorted from older to latest
+    // ideally, this.asks or this.bids are already sorted individually by time as they use queues
+    // since, bids and asks are separately sorted, we need to sort them by merging together
+    timesBySequence.sort((a, b) => a-b)
+
+    return {
+      timesBySequence,
+      timeOrdersMap
+    }
+  }
 
   // 
   /**
    * import is intended for usage in tandem with `export` to restore the orderbook from a snapshot
    * @param data 
    */
-  public import = (data: IOrderBookMarshaler) => {
-    this.asks = data.asks
-    this.bids = data.bids
-    this.orders = {}
+  public import = (data: IOrderBookMarshaler, ob: OrderBook) => {
+    // this.asks = data.asks
+    // this.bids = data.bids
+    // this.orders = {}
 
-    for (let order of this.asks.orders()) {
-      this.orders[order.id] = order
-    }
+    // for (let order of this.asks.orders()) {
+    //   this.orders[order.id] = order
+    // }
 
-    for (let order of this.bids.orders()) {
-      this.orders[order.id] = order
+    // for (let order of this.bids.orders()) {
+    //   this.orders[order.id] = order
+    // }
+    for (let time of data.timesBySequence) {
+      let timeSortedOrders = data.timeOrdersMap[String(time)]
+      for(let timeSortedOrder of timeSortedOrders) {
+        ob.limit(timeSortedOrder.side, timeSortedOrder.id, timeSortedOrder.size, timeSortedOrder.price)
+      }
     }
   }
 }
