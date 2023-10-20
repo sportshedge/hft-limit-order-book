@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js'
 import { Side } from './side'
 
-interface IOrder {
+export interface IOrder {
   id: string
   side: Side
   size: number
