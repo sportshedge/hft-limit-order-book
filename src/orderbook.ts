@@ -777,7 +777,7 @@ export class OrderBook {
    * import is intended for usage in tandem with `export` to restore the orderbook from a snapshot
    * @param data 
    */
-  public import = (data: IOrderBookMarshaler, ob: OrderBook) => {
+  public import = (data: IOrderBookMarshaler) => {
     // this.asks = data.asks
     // this.bids = data.bids
     // this.orders = {}
@@ -792,7 +792,7 @@ export class OrderBook {
     for (let time of data.timesBySequence) {
       let timeSortedOrders = data.timeOrdersMap[String(time)]
       for(let timeSortedOrder of timeSortedOrders) {
-        ob.limit(timeSortedOrder.side, timeSortedOrder.id, timeSortedOrder.size, timeSortedOrder.price)
+        this.limit(timeSortedOrder.side, timeSortedOrder.id, timeSortedOrder.size, timeSortedOrder.price)
       }
     }
   }

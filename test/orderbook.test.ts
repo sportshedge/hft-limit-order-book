@@ -455,7 +455,7 @@ void test('test export import', ({ equal, end }) => {
   const snapRestoredStr: IOrderBookMarshaler = JSON.parse(snapStr);
   console.log("Snap: ", snapRestoredStr)
 
-  ob.import(snapRestoredStr, ob)
+  ob.import(snapRestoredStr)
 
   console.log(ob.depth())
 
